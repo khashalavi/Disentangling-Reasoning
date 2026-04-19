@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Secrets and tokens
+*_token*
+*_key*
+*.pem
+*.key

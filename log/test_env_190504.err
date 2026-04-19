@@ -1,0 +1,2 @@
+sh: line 1: 3736468 Illegal instruction     (core dumped) tput cols 2> /dev/null
+/var/spool/slurmd/job190504/slurm_script: line 25: 3736479 Illegal instruction     (core dumped) python test_env.py

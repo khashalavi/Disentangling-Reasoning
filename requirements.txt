@@ -1,4 +1,4 @@
-absl-py==2.1.0
+absl-py==1.4.0
 accelerate==0.33.0
 aiohappyeyeballs==2.4.0
 aiohttp==3.10.5
@@ -140,7 +140,6 @@ threadpoolctl==3.5.0
 tokenizers==0.13.3
 toml==0.10.2
 torch==2.4.1
-torchaudio==0.13.1+cu116
 torchvision==0.19.1
 tornado==6.4.1
 tqdm==4.66.5

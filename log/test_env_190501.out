@@ -1,0 +1,42 @@
+=== Starting test at Sat Apr 18 22:31:42 CEST 2026 ===
+
+============================================================
+ Environment Test
+============================================================
+Python executable: /home/s76kalav/Disentangling-Memory-and-Reasoning/venv/bin/python
+Python version: 3.10.4 (main, Mar 30 2023, 20:43:57) [GCC 11.3.0]
+
+============================================================
+ Importing key packages
+============================================================
+✓ PyTorch version: 2.4.1+cu121
+  CUDA available: True
+  GPU count: 1
+  GPU name: NVIDIA A100-SXM4-80GB
+✓ transformers version: 4.31.0
+✓ peft version: 0.12.0
+✓ datasets version: 3.0.0
+✓ sentence_transformers version: 2.2.2
+
+============================================================
+ nvidia-smi output
+============================================================
+GPU info:
+ NVIDIA A100-SXM4-80GB, 590.48.01, 81920 MiB
+
+============================================================
+ Custom project modules (if any)
+============================================================
+✓ model.my_trainer can be imported
+✓ model.load_model can be imported
+✓ load_data.supervised_dataset can be imported
+
+============================================================
+ Simple PyTorch GPU operation
+============================================================
+✓ Tensor multiplication on GPU succeeded
+
+============================================================
+ Test completed
+============================================================
+=== Test finished at Sat Apr 18 22:31:54 CEST 2026 ===

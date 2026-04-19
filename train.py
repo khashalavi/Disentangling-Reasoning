@@ -142,7 +142,7 @@ def train():
     step_type_ids = None
     step_type_predictor = None
 
-    if model_args.add_soft_prompts:
+    if model_args.add_soft_prompts:             # here generate the tokens[memory, reasoning] and add them to the tokenizer 
         
         if (model_args.only_at_front and not model_args.plan_first) or model_args.num_special_prefix_tokens==0:
             prompt_text = {'prefix': ''}
@@ -158,7 +158,8 @@ def train():
                         self.vocab = ['reason','memory']
 
                     def predict(self, text: str, start=0):
-                        
+                        # The dataset was generated (as per Section 2.1) with tags like [reason]: and [rag]: 
+                        # This regex extracts those tags.
                         pattern = re.compile(r"^\[(.*?)\]:", re.MULTILINE)
                         matches = pattern.findall(text)
 
@@ -168,6 +169,8 @@ def train():
                                 result.append('reason')
                             elif match == 'rag':
                                 result.append('memory')
+                                # The code maps 'rag' (Retrieval-Augmented Generation concept) 
+                                # to the `<memory>` token discussed in the paper.
                         return result
                         
                 
