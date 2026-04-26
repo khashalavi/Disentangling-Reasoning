@@ -137,21 +137,20 @@ provide an inference planning for the above question to get the correct answer, 
 
 def NER_agent(questions, model_name="gpt-4o"):
     template = f"""
-    Factual knowledge is information that aligns with objective reality and can be verified through evidence or observation, such as scientific facts or historical events.
+        Factual knowledge is information that aligns with objective reality and can be verified through evidence or observation, such as scientific facts or historical events.
+        Please provide factual knowledge for below question set:
+        <Questions>
+        {questions}
+        <\Questions>
 
-    Please provide factual knowledge for below question set:
-<Questions>
-{questions}
-<\Questions>
-
-You should return a dic in json format, for each element in dic, the key is each question in <Questions>, the value is the Factual knowledge of each question in <Questions>.
-Your answer format should strictly be in following steps:
-```json
-{{
-      "question 1": "The factual knowledge of question 1",
-....
-}}
-```
+        You should return a dic in json format, for each element in dic, the key is each question in <Questions>, the value is the Factual knowledge of each question in <Questions>.
+        Your answer format should strictly be in following steps:
+        ```json
+        {{
+            "question 1": "The factual knowledge of question 1",
+        ....
+        }}
+        ```
 
       """
     text = get_response(model_name, template)

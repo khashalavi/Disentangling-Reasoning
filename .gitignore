@@ -13,3 +13,10 @@ env/
 *_key*
 *.pem
 *.key
+
+log/
+*.log
+load_data/pipeline_execution.log
+
+dataset_folder/
+dataset_folder_pre-upload/
