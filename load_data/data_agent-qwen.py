@@ -113,6 +113,8 @@ def extract_labeled_content_as_list(input_string):
         list: A list of formatted strings, e.g., ["[reason]: <content>", "[rag]: <content>"].
     """
     logger.info("[TAG EXTRACTOR] Starting extraction of [reason] and [rag] tags.")
+    if "</think>" in input_string:
+        input_string = input_string.split("</think>")[-1]
     
     # Split the string by the specific delimiter defined in the prompt
     steps = re.split(r'\*Step name\*:', input_string)
@@ -120,20 +122,39 @@ def extract_labeled_content_as_list(input_string):
     labeled_content = []
     for step in steps:
         if step.strip():
-            # Extract the requirement type (e.g., 'reason' or 'rag')
-            requirement_match = re.search(r'\*\*Requirement\*\*: \[(.*)\]', step)
-            if requirement_match:
-                requirement = f"[{requirement_match.group(1)}]"
+            # # Extract the requirement type (e.g., 'reason' or 'rag')
+            # requirement_match = re.search(r'\*\*Requirement\*\*: \[(.*)\]', step)
+            # if requirement_match:
+            #     requirement = f"[{requirement_match.group(1)}]"
 
-            # Extract the actual content/reasoning of the step
-            content_match = re.search(r'\*\*Content\*\*: (.*)', step)
-            if content_match:
+            # # Extract the actual content/reasoning of the step
+            # content_match = re.search(r'\*\*Content\*\*: (.*)', step)
+            # if content_match:
+            #     content = content_match.group(1).strip()
+
+            #     # Combine the requirement tag and content into a single string
+            #     combined_step = f"{requirement}: {content}"
+            #     labeled_content.append(combined_step)
+            #     logger.info(f"[TAG EXTRACTOR] Assembled step: {combined_step[:100]}...")
+
+            # adjusted to lane breaks 
+            requirement_match = re.search(r'\*\*Requirement\*\*:\s*\[(.*?)\]', step)
+            
+            # Use re.DOTALL so (.*) captures everything, including newlines, until the end of the step
+            content_match = re.search(r'\*\*Content\*\*:\s*(.*)', step, re.DOTALL)
+            
+            # Ensure BOTH were successfully found before trying to combine them
+            if requirement_match and content_match:
+                requirement = f"[{requirement_match.group(1).strip()}]"
                 content = content_match.group(1).strip()
-
-                # Combine the requirement tag and content into a single string
+                
                 combined_step = f"{requirement}: {content}"
                 labeled_content.append(combined_step)
                 logger.info(f"[TAG EXTRACTOR] Assembled step: {combined_step[:100]}...")
+            else:
+                logger.warning("[TAG EXTRACTOR] Failed to parse requirement or content in step.")
+
+
 
     logger.info(f"[TAG EXTRACTOR] Finished extracting {len(labeled_content)} steps.")
     return labeled_content
@@ -165,7 +186,8 @@ def get_response(prompt, model_name=None):
     # NOTE: max_new_tokens is set to 2048 because planning and JSON outputs can be long.
     generated_ids = model.generate(
         **model_inputs,
-        max_new_tokens=2048, 
+        # max_new_tokens=4096, 
+        max_new_tokens = 8192,  
         do_sample=True,
         temperature=0.7,
         top_p=0.9
@@ -197,6 +219,11 @@ def extract_knowledge_based(text):
     Returns:
         list: A list of string segments representing the knowledge queries required for the steps.
     """
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+    # if "[FINAL ANSWER]:" in text:
+    #     text = text.split("[FINAL ANSWER]:")[-1]
+    # logger.info(f"extract_knowledge_based(): [QUERY EXTRACTOR] Extracting knowledge-based queries from text:\n{text[:200]}...")
     # Uses a non-greedy dotall match to capture text between 'Knowledge based:' and 'Content'
     pattern = r"\*\*Knowledge based\*\*:(.*?)\*\*Content\*\*"
     matches = re.findall(pattern, text, re.DOTALL)  # dotail means accept newlines in the match as well 
@@ -216,6 +243,16 @@ def clean_and_parse_json_string_with_codeblock(json_str):
         dict: The parsed JSON data.
     """
     logger.info("[JSON PARSER] Raw JSON input received.")
+
+    # Remove the model's internal thinking process
+    if "</think>" in json_str:
+        json_str = json_str.split("</think>")[-1]
+
+    # # --- NEW: Extract only what comes after the delimiter ---
+    #     if "[FINAL ANSWER]:" in json_str:
+    #         json_str = json_str.split("[FINAL ANSWER]:")[-1]
+        
+    #     logger.info(f"Extracted JSON portion:\n{json_str[:200]}...")  # Log the first 200 characters of the extracted JSON string
 
     # Remove markdown codeblock formatting
     json_str = json_str.replace('```json', '').replace('```', '')
