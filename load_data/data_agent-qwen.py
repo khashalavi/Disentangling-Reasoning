@@ -416,11 +416,26 @@ def generate_StrategyQA_agent(type):
         type (str): The split type (e.g., 'train', 'test').
     """
     data = load_dataset("ChilleD/StrategyQA")[type]
-    dict = []
     json_file = "dataset_folder/StrategyQA_{}.json".format(type)
+    
+    # list existing data, if any exist, else start with empty list 
+    processed_questions = set()
+    if os.path.exists(json_file):
+        with open(json_file, "r") as f:
+            existing_data = json.load(f)
+            processed_questions = {item["question"] for item in existing_data}
+        print(f"✓ Loaded {len(existing_data)} previously processed examples")
+        dict = existing_data  # Continue building on existing list
+    else:
+        dict = []
 
-    for example in tqdm(data):
+    
+    for i, example in enumerate(tqdm(data, desc=f"Processing {type}")):
         question = example["question"]
+        # Skip questions that have already been processed to avoid duplication
+        if question in processed_questions:
+            continue
+            
         # Convert boolean answers to string
         answer = 'True' if example["answer"] else 'False'
 
@@ -456,6 +471,7 @@ def generate_StrategyQA_agent(type):
             "split": type
         }
         dict.append(new_entry)
+        processed_questions.add(question) 
         
         # Incrementally dump to JSON file to avoid data loss on crash
         with open(json_file, "w") as f:
@@ -475,12 +491,30 @@ def generate_MMLU_pro_agent(split):
         type = "test"
     print(type)
     data = load_dataset("TIGER-Lab/MMLU-Pro")[type]
-    dict = []
     json_file = "dataset_folder/MMLU_Pro_{}.json".format(type)
+    
+    
+    # LOAD EXISTING DATA IF FILE EXISTS
+    processed_questions = set()
+    if os.path.exists(json_file):
+        with open(json_file, "r") as f:
+            existing_data = json.load(f)
+            # Use the formatted question string as the unique key
+            processed_questions = {item["question"] for item in existing_data}
+        print(f"✓ Loaded {len(existing_data)} previously processed examples")
+        dict = existing_data  # Continue building on existing list
+    else:
+        dict = []
 
-    for example in tqdm(data):
+
+
+    for i, example in enumerate(tqdm(data, desc=f"Processing MMLU-Pro {type}")):
         # Format the question with its specific options
         question = format_example(example["question"], example["options"])
+        
+        if question in processed_questions:
+            continue
+
         answer = example["answer"]
 
         max_retries = 5
@@ -494,7 +528,7 @@ def generate_MMLU_pro_agent(split):
                     break
                 else:
                     retry_count += 1
-                    print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
+                    print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. ")
             except Exception as e:
                 retry_count += 1
                 print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
@@ -510,6 +544,7 @@ def generate_MMLU_pro_agent(split):
             "split": type
         }
         dict.append(new_entry)
+        processed_questions.add(question)
 
         with open(json_file, "w") as f:
             json.dump(dict, f, indent=4)
@@ -526,10 +561,20 @@ def generate_CommensenQA_agent(split):
         type = "train"
 
         data = load_dataset("tau/commonsense_qa")[type]
-        dict = []
         json_file = "dataset_folder/commonsense_qa_{}.json".format(type)
         
-        for example in tqdm(data):
+        # load existing data to avoid duplication 
+        processed_questions = set()
+        if os.path.exists(json_file):
+            with open(json_file, "r") as f:
+                existing_data = json.load(f)
+                processed_questions = {item["question"] for item in existing_data}
+            print(f"✓ Loaded {len(existing_data)} previously processed examples")
+            dict = existing_data
+        else:
+            dict = []
+
+        for i, example in enumerate(tqdm(data, desc=f"Processing CommonsenseQA {type}")):
             q = example['question']
             choices = example['choices']['text']
             labels = example['choices']['label']
@@ -538,6 +583,11 @@ def generate_CommensenQA_agent(split):
             question = f"Question: {q} Options: "
             for label, choice in zip(labels, choices):
                 question += f"{label}.{choice} "
+
+            if question in processed_questions:
+                continue
+                
+
             answer = example['answerKey']
 
             max_retries = 5
@@ -551,7 +601,7 @@ def generate_CommensenQA_agent(split):
                         break
                     else:
                         retry_count += 1
-                        print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
+                        print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}.")
                 except Exception as e:
                     retry_count += 1
                     print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
@@ -567,6 +617,7 @@ def generate_CommensenQA_agent(split):
                 "split": type
             }
             dict.append(new_entry)
+            processed_questions.add(question)  
 
             with open(json_file, "w") as f:
                 json.dump(dict, f, indent=4)
@@ -577,8 +628,19 @@ def generate_CommensenQA_agent(split):
         data = load_dataset("tau/commonsense_qa")[type]
         print(data)
         json_file = "dataset_folder/commonsense_qa_test_clean_CC.json"
-        dict = []
-        for example in tqdm(data):
+        
+        # Optional: Add resume for test split too (if formatting is slow)
+        processed_questions = set()
+        if os.path.exists(json_file):
+            with open(json_file, "r") as f:
+                existing_data = json.load(f)
+                processed_questions = {item["question"] for item in existing_data}
+            print(f"✓ Loaded {len(existing_data)} previously formatted test examples")
+            dict = existing_data
+        else:
+            dict = []
+
+        for i, example in enumerate(tqdm(data, desc=f"Processing CommonsenseQA {type}")):
             q = example['question']
             choices = example['choices']['text']
             labels = example['choices']['label']
@@ -586,6 +648,10 @@ def generate_CommensenQA_agent(split):
             question = f"Question: {q} Options: "
             for label, choice in zip(labels, choices):
                 question += f"{label}.{choice} "
+
+            if question in processed_questions:
+                continue
+                
             answer = example['answerKey']
 
             new_entry = {
@@ -598,7 +664,7 @@ def generate_CommensenQA_agent(split):
             
         with open(json_file, "w") as f:
             json.dump(dict, f, indent=4)
-        exit()
+        # exit()
 
 
 
@@ -657,31 +723,46 @@ def generate_truthfulqa_agent(split):
     Generates dataset steps for the TruthfulQA dataset.
     Handles multiple choice formatting and randomizing options.
     """
-    type = split
-    if type == "train":
-        type = "train"
+    split_type = split
+    choice_letters = [chr(i) for i in range(ord('A'), ord('Z')+1)]
 
+    # ============= TRAIN SPLIT (80% of validation, with CoT + Resume) =============
+    if split_type == "train":
         ds = load_dataset("truthfulqa/truthful_qa", "multiple_choice")
-        json_file = "dataset_folder/truthful_qa_{}.json".format(type)
+        json_file = "dataset_folder/truthful_qa_{}.json".format(split_type)
         data = ds['validation']
-        choice_letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
-        
-        # Uses the first 80% of the validation set as training data
         train_data = data.select(range(int(len(data) * 0.8)))
-        dict = []
-        for example in train_data:
+
+        # ➕ RESUME LOGIC
+        processed_questions = set()
+        if os.path.exists(json_file):
+            with open(json_file, "r") as f:
+                existing_data = json.load(f)
+                processed_questions = {item["question"] for item in existing_data}
+            print(f"✓ Loaded {len(existing_data)} previously processed examples")
+            data_list = existing_data
+        else:
+            data_list = []
+
+        for i, example in enumerate(tqdm(train_data, desc=f"Processing TruthfulQA {split_type}")):
             question_text = example['question']
             choices = example['mc1_targets']['choices']
             labels = example['mc1_targets']['labels']
             
-            # Shuffle the choices and labels synchronously
+            # DETERMINISTIC SHUFFLE: Crucial for resume compatibility
+            # Using index 'i' ensures the exact same shuffle every time this question is processed
+            rng = random.Random(i)
             choices_and_labels = list(zip(choices, labels))
-            random.shuffle(choices_and_labels) 
+            rng.shuffle(choices_and_labels) 
             shuffled_choices, shuffled_labels = zip(*choices_and_labels)
             
-            formatted_choices = [f"{choice_letters[i]}. {choice}" for i, choice in enumerate(shuffled_choices)]
+            formatted_choices = [f"{choice_letters[j]}. {choice}" for j, choice in enumerate(shuffled_choices)]
             question = f"{question_text} {' '.join(formatted_choices)}"
             
+            # ➕ SKIP IF ALREADY PROCESSED
+            if question in processed_questions:
+                continue
+                
             # Find the correct answer (label == 1) based on the shuffled order
             answer_index = shuffled_labels.index(1)
             answer = choice_letters[answer_index]
@@ -693,65 +774,81 @@ def generate_truthfulqa_agent(split):
             while retry_count < max_retries:
                 try:
                     cot_steps = get_label(question, answer)
-                    if (len(cot_steps) > 0):
+                    if len(cot_steps) > 0:
+                        print('success, aoligei')
                         break
                     else:
                         retry_count += 1
-                        print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
+                        # ✅ FIX: Removed undefined 'e' variable
+                        print(f"Error: Empty CoT steps. Attempt {retry_count} of {max_retries}")
                 except Exception as e:
                     retry_count += 1
-                    print(f"Error occurred while processing question: {question}. Attempt {retry_count} of {max_retries}. Error: {e}")
+                    print(f"Error processing question. Attempt {retry_count} of {max_retries}. Error: {e}")
 
             if retry_count == max_retries:
-                print(f"Skipping question due to repeated errors: {question}")
+                print(f"Skipping question due to repeated errors: {question_text[:50]}...")
                 continue
 
             new_entry = {
                 "question": question,
                 "answer": answer,
                 "cot_steps": cot_steps,
-                "split": type
+                "split": split_type
             }
-            dict.append(new_entry)
-
+            data_list.append(new_entry)
+            processed_questions.add(question)  # Add to set to prevent future duplicates
+            
             with open(json_file, "w") as f:
-                json.dump(dict, f, indent=4)
+                json.dump(data_list, f, indent=4)
 
+    # ============= TEST SPLIT (20% of validation, formatting only) =============
     else:  
-        # Handles testing split for TruthfulQA (remaining 20%)
         ds = load_dataset("truthfulqa/truthful_qa", "multiple_choice")
-        json_file = "dataset_folder/truthful_qa_{}_clean_CC.json".format(type)
+        json_file = "dataset_folder/truthful_qa_{}.json".format(split_type)
         data = ds['validation']
         test_data = data.select(range(int(len(data) * 0.8), len(data)))
-        dict = []
-        choice_letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+        
+        processed_questions = set()
+        if os.path.exists(json_file):
+            with open(json_file, "r") as f:
+                existing_data = json.load(f)
+                processed_questions = {item["question"] for item in existing_data}
+            print(f"✓ Loaded {len(existing_data)} previously formatted test examples")
+            data_list = existing_data
+        else:
+            data_list = []
     
-        for example in test_data:
+        for i, example in enumerate(tqdm(test_data, desc=f"Formatting TruthfulQA test")):
             question_text = example['question']
             choices = example['mc1_targets']['choices']
             labels = example['mc1_targets']['labels']
             
+            # 🔑 Same deterministic shuffle for test split
+            rng = random.Random(i)
             choices_and_labels = list(zip(choices, labels))
-            random.shuffle(choices_and_labels) 
+            rng.shuffle(choices_and_labels) 
             shuffled_choices, shuffled_labels = zip(*choices_and_labels)
             
-            formatted_choices = [f"{choice_letters[i]}. {choice}" for i, choice in enumerate(shuffled_choices)]
+            formatted_choices = [f"{choice_letters[j]}. {choice}" for j, choice in enumerate(shuffled_choices)]
             question = f"{question_text} {' '.join(formatted_choices)}"
             
-            answer_index = shuffled_labels.index(1)
+            if question in processed_questions:
+                continue
+                
+            answer_index = shuffled_labels.index(1)     
             answer = choice_letters[answer_index]
             
             new_entry = {
                 "question": question,
                 "answer": answer,
-                "cot_steps": [], # Leaves CoT empty for testing
+                "cot_steps": [],  # Leaves CoT empty for testing
                 "split": 'test'
             }
-            dict.append(new_entry)
+            data_list.append(new_entry)
+            processed_questions.add(question) # Add to set to prevent future duplicates
             
-            with open(json_file, "w") as f:
-                json.dump(dict, f, indent=4)
-        exit()
+        with open(json_file, "w") as f:
+            json.dump(data_list, f, indent=4)
 
 
 def main(args):
