@@ -393,7 +393,7 @@ def generate_StrategyQA_agent(type):
     # list existing data, if any exist, else start with empty list 
     processed_questions = set()
     if os.path.exists(json_file):
-        with open(json_file, "r") as f:
+        with open(json_file, "r", encoding="utf-8") as f:
             existing_data = json.load(f)
             processed_questions = {item["question"] for item in existing_data}
         print(f"✓ Loaded {len(existing_data)} previously processed examples")
@@ -469,7 +469,7 @@ def generate_MMLU_pro_agent(split):
     # LOAD EXISTING DATA IF FILE EXISTS
     processed_questions = set()
     if os.path.exists(json_file):
-        with open(json_file, "r") as f:
+        with open(json_file, "r", encoding="utf-8") as f:
             existing_data = json.load(f)
             # Use the formatted question string as the unique key
             processed_questions = {item["question"] for item in existing_data}
@@ -538,7 +538,7 @@ def generate_CommensenQA_agent(split):
         # load existing data to avoid duplication 
         processed_questions = set()
         if os.path.exists(json_file):
-            with open(json_file, "r") as f:
+            with open(json_file, "r", encoding="utf-8") as f:
                 existing_data = json.load(f)
                 processed_questions = {item["question"] for item in existing_data}
             print(f"✓ Loaded {len(existing_data)} previously processed examples")
@@ -604,7 +604,7 @@ def generate_CommensenQA_agent(split):
         # Optional: Add resume for test split too (if formatting is slow)
         processed_questions = set()
         if os.path.exists(json_file):
-            with open(json_file, "r") as f:
+            with open(json_file, "r", encoding="utf-8") as f:
                 existing_data = json.load(f)
                 processed_questions = {item["question"] for item in existing_data}
             print(f"✓ Loaded {len(existing_data)} previously formatted test examples")
@@ -649,7 +649,7 @@ def clean_json(json_file, json_file1):
         json_file (str): Path to the input JSON file.
         json_file1 (str): Path to the output (cleaned) JSON file.
     """
-    with open(json_file, "r") as f:
+    with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     list = []
@@ -686,7 +686,7 @@ def clean_json(json_file, json_file1):
 
         list.append(new_entry)
 
-    with open(json_file1, "w") as f:
+    with open(json_file1, "w", encoding="utf-8") as f:
         json.dump(list, f, indent=4)
 
 
@@ -708,7 +708,7 @@ def generate_truthfulqa_agent(split):
         # ➕ RESUME LOGIC
         processed_questions = set()
         if os.path.exists(json_file):
-            with open(json_file, "r") as f:
+            with open(json_file, "r", encoding="utf-8") as f:
                 existing_data = json.load(f)
                 processed_questions = {item["question"] for item in existing_data}
             print(f"✓ Loaded {len(existing_data)} previously processed examples")
@@ -770,8 +770,8 @@ def generate_truthfulqa_agent(split):
             data_list.append(new_entry)
             processed_questions.add(question)  # Add to set to prevent future duplicates
             
-            with open(json_file, "w") as f:
-                json.dump(data_list, f, indent=4)
+            with open(json_file, "w", encoding="utf-8") as f:
+                json.dump(data_list, f, indent=4, ensure_ascii=False)
 
     # ============= TEST SPLIT (20% of validation, formatting only) =============
     else:  
@@ -782,7 +782,7 @@ def generate_truthfulqa_agent(split):
         
         processed_questions = set()
         if os.path.exists(json_file):
-            with open(json_file, "r") as f:
+            with open(json_file, "r", encoding="utf-8") as f:
                 existing_data = json.load(f)
                 processed_questions = {item["question"] for item in existing_data}
             print(f"✓ Loaded {len(existing_data)} previously formatted test examples")
@@ -835,6 +835,11 @@ def main(args):
         generate_StrategyQA_agent(args.mode)
     elif args.dataset == "MMLU_Pro":
         generate_MMLU_pro_agent(args.mode)
+        actual_split = "validation" if args.mode == "train" else "test"
+        file = os.path.join("dataset_folder", f"MMLU_Pro_{actual_split}.json")
+        clean_file = os.path.join("dataset_folder", f"MMLU_Pro_{actual_split}_clean_CC.json")
+        clean_json(file, clean_file)
+        return
     elif args.dataset == "commonsense_qa":
         generate_CommensenQA_agent(args.mode)
     elif args.dataset == "truthful_qa":
