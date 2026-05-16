@@ -24,31 +24,8 @@ from dotenv import load_dotenv
 
 
 
-# # Set up excessive logging
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s | %(levelname)s | %(message)s',
-#     handlers=[
-#         logging.FileHandler("pipeline_execution.log"),
-#         logging.StreamHandler(sys.stdout)
-#     ]
-# )
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-load_dotenv()
-
-API_URL = os.getenv("API_URL")
-API_KEY = os.getenv("API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME", "MiniMaxAI/MiniMax-M2.5")  # or whichever model you want
-
-if not API_KEY:
-    raise ValueError("Missing API_KEY in .env or environment")
-if not API_URL:
-    raise ValueError("Missing API_URL in .env or environment")
-logger.info(f"Using Fraunhofer API with model: {MODEL_NAME}")
-
-
-# setup Key
 # -----------------
 load_dotenv()
 
@@ -60,7 +37,6 @@ if not API_KEY:
     raise ValueError("Missing API_KEY in .env or environment")
 if not API_URL:
     raise ValueError("Missing API_URL in .env or environment")
-logger.info(f"Using Fraunhofer API with model: {MODEL_NAME}")
 # -----------------
 
 
@@ -843,8 +819,8 @@ def generate_truthfulqa_agent(split):
             data_list.append(new_entry)
             processed_questions.add(question) # Add to set to prevent future duplicates
             
-        with open(json_file, "w") as f:
-            json.dump(data_list, f, indent=4)
+        with open(json_file, "w", encoding="utf-8") as f:
+            json.dump(data_list, f, indent=4, ensure_ascii=False)
 
 
 def main(args):
@@ -871,40 +847,50 @@ def main(args):
     clean_json(file, clean_file)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Qwen Data Generation")
-    parser.add_argument('--dataset', type=str, required=True, help="Dataset to process (e.g., StrategyQA)")
-    parser.add_argument('--mode', type=str, required=True, help="Split mode (e.g., train, test)")
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description="Run Qwen Data Generation")
+#     parser.add_argument('--dataset', type=str, required=True, help="Dataset to process (e.g., StrategyQA)")
+#     parser.add_argument('--mode', type=str, required=True, help="Split mode (e.g., train, test)")
     
-    args = parser.parse_args()
+#     args = parser.parse_args()
     
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Qwen Data Generation")
+if __name__ == "__main__":    
+    parser = argparse.ArgumentParser(description="Run Data Generation")
     parser.add_argument('--dataset', type=str, required=True, help="Dataset to process (e.g., StrategyQA)")
     parser.add_argument('--mode', type=str, required=True, help="Split mode (e.g., train, test)")
-    
+
     args = parser.parse_args()
 
     # Create log directory
     os.makedirs("log", exist_ok=True)
 
-    # Sanitize model name for filename (replace / and spaces)
+    # Sanitize model name for filename
     safe_model_name = MODEL_NAME.replace("/", "_").replace(" ", "_")
-
-    # Configure logging with dynamic filename
     log_filename = os.path.join("log", f"{args.mode}_{safe_model_name}_{args.dataset}.log")
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s | %(levelname)s | %(message)s',
-        handlers=[
-            logging.FileHandler(log_filename),
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
+    # Explicitly configure the root logger (fixes empty log file issue)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Remove any existing handlers
+    root_logger.handlers.clear()
+
+    # File handler
+    file_handler = logging.FileHandler(log_filename, mode='a')
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
+    root_logger.addHandler(file_handler)
+
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
+    root_logger.addHandler(console_handler)
+
     logger = logging.getLogger(__name__)
     logger.info(f"Logging to: {log_filename}")
+    logger.info(f"Using Fraunhofer API with model: {MODEL_NAME}")
 
     # This actually kicks off the generation process
     main(args)
